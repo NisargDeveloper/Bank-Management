@@ -1,3 +1,10 @@
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class FinalProject {
@@ -15,6 +22,8 @@ public class FinalProject {
         int acc_type;
         long balance;
         int pass_code;
+
+        boolean found = false;
         public static final Scanner scan = new Scanner(System.in);
         void showMenu() {
             while(true) {
@@ -58,8 +67,6 @@ try {
     System.out.println("ERR : Enter Valid Data::Insertion Failed!\n");
 }
 
-
-
             }
         }
 
@@ -87,30 +94,100 @@ try {
                         break;
                     case 2:
                         System.out.println("*****************************************");
-                        System.out.println("Your Current Balance = " + balance);
+                        showAccount();
+//                        System.out.println("Your Current Balance = " + balance);
                         System.out.println("*****************************************");
 //
                         break;
                     case 3:
-                        System.out.println("*****************************************");
-                        System.out.println("Enter an amount to deposit: ");
-                        System.out.println("*****************************************");
-                        int amount = scan.nextInt();
-                        deposit(amount);
-                        System.out.println("Balance after deposit: " + balance);
-                        break;
-                    case 4:
-                        System.out.println("*****************************************");
-                        System.out.println("Enter an amount to withdraw: ");
-                        System.out.println("*****************************************");
-                        int amount2 = scan.nextInt();
-                        if(balance >= amount2) {
-                            withdraw(amount2);
-                            System.out.println("Balance after withdrawal: " + balance);
-                        }else{
-                            System.out.println("OOPS!! Low balance, cannot perform withdraw");
+                        System.out.println("Enter the Account Number where to deposit");
+                        String acn = scan.next();
+                        // boolean found = false;
+                        found = search(acn);
+                        if (found){
+                            System.out.println("Enter an amount to deposit: ");
+                            System.out.println("*****************************************");
+                            int amount = scan.nextInt();
+                            deposit(amount);
+                            System.out.println("Balance after deposit: " + balance);
+                            break;
+                        }
+                        else{
+                            System.out.println("Account does not exist");
                         }
                         break;
+                    case 4:
+                        System.out.println("Enter the Account Number where to withdraw");
+                        acn = scan.next();
+                        found = search(acn);
+                        if (found){
+                            System.out.println("*****************************************");
+                            System.out.println("Enter an amount to withdraw: ");
+                            System.out.println("*****************************************");
+
+                            int amount = scan.nextInt();
+                            withdraw(amount);
+                            System.out.println("Balance after withdrawal: " + balance);
+                            break;
+                        }
+                        else{
+                            System.out.println("Account does not exist");
+                        }
+                        break;
+
+                    case 5:
+                        try{
+                            transferMoney();
+                        } catch (Exception e) {
+                            System.out.println("Error");
+                        }
+
+                        break;
+                    case 6:
+                        try{
+                            if(name != null && pass_code != 0 && accno != null) {
+                                System.out.println("*****************************************");
+                                System.out.println("Inserting all details in file" );
+                                System.out.println("*****************************************");
+
+                                File myObj = new File("src/finalProject.csv");
+                                System.out.println("Inserting details " + myObj.getName());
+                                FileWriter myWriter = new FileWriter("src/finalProject.csv", true);
+                                PrintWriter out = new PrintWriter(myWriter);
+                                out.print(name);
+                                out.print(",");
+                                out.print(pass_code);
+                                out.print(",");
+                                out.print(acc_type);
+                                out.print(",");
+                                out.print(accno);
+                                out.print(",");
+                                out.println(balance);
+
+                                out.close();
+                            } else {
+                                System.out.println("The account details are not available");
+                            }
+
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        break;
+                    case 7:
+                        System.out.println("*****************************************");
+                        System.out.println("7. Pay Utility Bills (Credit Card) ");
+                        System.out.println("*****************************************");
+                        System.out.println("\n Please enter amount to pay ");
+                        int amount3 = scan.nextInt();
+                        if(balance >= amount3) {
+                            bills(amount3);
+                            System.out.println("Balance after Paying Bills: " + balance);
+                        }else{
+                            System.out.println("OOPS!! Low balance, cannot perform Payment");
+                        }
+                        break;
+
                     case 8:
                         System.out.println("*********Exit************");
                         System.out.println("Thank You for using our services ");
@@ -186,6 +263,108 @@ try {
 
             }
         }
+
+         void bills(int amount) {
+             if (amount != 0) {
+                 balance = balance - amount;
+
+             }
+         }
+
+          boolean search(String acn){
+             if(accno.equals(acn)){
+                 showAccount();
+                 return (true);
+             }
+             else {
+                 return (false);
+             }
+         }
+
+         public void showAccount(){
+             System.out.println("Account Number = "+accno);
+             System.out.print("Note: 1) Chequing Account 2) Saving Account");
+             System.out.println("\n Account Type of Account " +accno+ " = " +acc_type);
+             System.out.println("Name of Account Holder = "+name);
+             System.out.println("Balance in Account Number " +accno+ " = "+balance);
+         }
+
+         public void transferMoney() throws IOException {
+             String line = null;
+             String oldContent = "";
+             FileWriter writer = null;
+             File fileToBeModified = new File("src/finalProject.csv");
+             BufferedReader myWriter = new BufferedReader(new FileReader("src/finalProject.csv"));
+
+             System.out.println("Please enter receiver's account");
+             String receiverAcc = scan.next();
+             System.out.println("Enter amount you want to deposit");
+             int amount = scan.nextInt();
+             while(amount > balance) {
+                 System.out.println("Enter correct amount. It seems you don't have enough balance");
+                 amount = scan.nextInt();
+             }
+             while ((line = myWriter.readLine()) != null) {
+                 final String[] userDetails = line.split(",");
+                 try {
+                     final String accNumOfUser = userDetails[3];
+                     final String balanceOfUser = userDetails[4];
+                     final String nameOfUser = userDetails[0];
+                     final String passwordOfUser = userDetails[1];
+                     final String accountType = userDetails[2];
+
+                     int balanceInteger = Integer.parseInt(balanceOfUser);
+                     System.out.println(accNumOfUser);
+                     if(Objects.equals(receiverAcc, accNumOfUser)) {
+                         System.out.println("The matched account number is " + accNumOfUser);
+                         System.out.println(accNumOfUser + " is having the balance " + balanceOfUser);
+                         int newBalance = balanceInteger + amount;
+                         System.out.println(nameOfUser + " " + passwordOfUser + " " + accountType + " " + accNumOfUser + " " + newBalance );
+                         System.out.println(newBalance);
+                         FileWriter newWriter = new FileWriter("src/finalProject.csv", true);
+                         PrintWriter out = new PrintWriter(newWriter);
+                         out.print(nameOfUser);
+                         out.print(",");
+                         out.print(passwordOfUser);
+                         out.print(",");
+                         out.print(accountType);
+                         out.print(",");
+                         out.print(accNumOfUser);
+                         out.print(",");
+                         out.println(newBalance);
+out.close();
+balance = balance - amount;
+//                         System.out.println(newBalance);
+//
+//
+//                         String newContent = oldContent.replaceAll("891", "1000");
+//
+//                         //Rewriting the input text file with newContent
+//
+//                         writer = new FileWriter(fileToBeModified);
+//
+//                         writer.write(newContent);
+
+//                         Path path = Paths.get("src/finalProject.csv");
+//                         Charset charset = StandardCharsets.UTF_8;
+//
+//                         String content = new String(Files.readString(path), charset);
+//                         content = content.replaceAll("0", "1000");
+//                         Files.write(path, content.getBytes(charset));
+
+
+
+                         break;
+                     } else {
+                         System.out.println("The entered account is not available");
+                     }
+                 } catch (Exception e) {
+                     System.out.println("Incorrect number of values Provided. \nEXITING.");
+
+                 }
+             }
+             System.out.println("Money got transfer successfully");
+         }
 
 
         private static boolean isValidEntry ( int choice){
